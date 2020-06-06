@@ -1,0 +1,8 @@
+{
+    "name": "Snapmaker G-code Writer",
+    "author": "razor10021990",
+    "version": "1.0.0",
+    "description": "Writes g-code to a file and adds Snapmaker 2 specific information.",
+    "api": "7.2.0",
+    "i18n-catalog": "cura"
+}
