@@ -33,7 +33,7 @@ class SnapmakerGCodeWriter(MeshWriter):
     that to the output device.
     """
 
-    version = 
+    version = 1
     """The file format version of the serialised g-code.
 
     It can only read settings with the same version as the version it was
