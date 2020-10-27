@@ -14,6 +14,7 @@ from cura.Machines.ContainerTree import ContainerTree
 from cura.CuraApplication import CuraApplication
 from cura.Snapshot import Snapshot
 from cura.Utils.Threading import call_on_qt_thread
+from cura.UI import PrintInformation
 from PyQt5.QtCore import QByteArray,QIODevice,QBuffer
 
 from UM.i18n import i18nCatalog
@@ -97,10 +98,29 @@ class SnapmakerGCodeWriter(MeshWriter):
             return False
         gcode_dict = getattr(scene, "gcode_dict")
         gcode_list = gcode_dict.get(active_build_plate, None)
+       
         # Get some vars (I cannot find the correct value)
-            # estiTime = ... No idea
-            # printTemp = Application.getInstance().getGlobalContainerStack().extruders[0].material.getMetaData().get("material_print_temperature", "value")
-            # bedTemp = Application.getInstance().getGlobalContainerStack().extruders[0].material.getMetaData().get("material_bed_temperature", "value")
+        printTemp = None
+        bedTemp = None
+        for x in gcode_list:
+            if ("M190" in x or "M140" in x ) and bedTemp is None:
+                for y in re.findall(r"(M140|M190) S(\d+)",x):
+                    #Logger.log("d","Bed:" + y[1])
+                    bedTemp = y[1]
+                    break;
+            if ("M109" in x or "M104" in x ) and printTemp is None:
+                for y in re.findall(r"(M109|M104) S(\d+)",x):
+                    #Logger.log("d","Extruder:" + y[1])
+                    printTemp = y[1]
+                    break;
+            if printTemp is not None and bedTemp is not None:
+                break;
+        print_info =  Application.getInstance().getPrintInformation()
+        feature_times = print_info.getFeaturePrintTimes()
+        estiTime = 0 #in Seconds
+        for x in feature_times:
+            #Logger.log("d",x+":"+str(int(feature_times[x])) + " Seconds")
+            estiTime += int(feature_times[x])
         # Generate snapshot
         self.snapshot = self._createSnapshot()
         Logger.log("d","Snapshot created.")
@@ -136,9 +156,9 @@ class SnapmakerGCodeWriter(MeshWriter):
             stream.write("\n\n;header_type: 3dp\n")
             stream.write(";thumbnail: data:image/png;base64,"+base64_message+"\n")
             stream.write(";file_total_lines: "+str(model_line_count)+"\n")
-                # stream.write(";estimated_time(s): "+str(estiTime)+"\n")
-                # stream.write(";nozzle_temperature(°C): "+str(printTemp)+"\n")
-                # stream.write(";build_plate_temperature(°C): "+str(bedTemp)+"\n")
+            stream.write(";estimated_time(s): "+str(estiTime)+"\n")
+            stream.write(";nozzle_temperature(°C): "+str(printTemp)+"\n")
+            stream.write(";build_plate_temperature(°C): "+str(bedTemp)+"\n")
             stream.write(header_buffer[7].replace('MAXX:','max_x(mm): ')) # max_x
             stream.write(header_buffer[8].replace('MAXY:','max_y(mm): ')) # max_y
             stream.write(header_buffer[9].replace('MAXZ:','max_z(mm): ')) # max_z
